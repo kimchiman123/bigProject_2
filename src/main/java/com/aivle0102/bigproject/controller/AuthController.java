@@ -46,11 +46,17 @@ public class AuthController {
     @PostMapping("/auth/login")
     public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         UserResponse response = authService.login(request);
-        log.info("Login response for {} -> passwordChangedAt={}, passwordExpired={}, passwordExpiryAt={}",
+        log.info("Login 응답 {} -> passwordChangedAt={}, passwordExpired={}, passwordExpiryAt={}",
                 response.getUserId(),
                 response.getPasswordChangedAt(),
                 response.isPasswordExpired(),
                 response.getPasswordExpiryAt());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/auth/demo-login")
+    public ResponseEntity<UserResponse> demoLogin() {
+        UserResponse response = authService.demoLogin();
         return ResponseEntity.ok(response);
     }
 
@@ -121,12 +127,5 @@ public class AuthController {
         }
         authService.verifyPassword(principal.getName(), request.getPassword());
         return ResponseEntity.ok(Map.of("message", "비밀번호가 확인되었습니다."));
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> healthCheck() {
-        return ResponseEntity.ok(Map.of(
-                "status", "UP",
-                "message", "Auth service is running"));
     }
 }

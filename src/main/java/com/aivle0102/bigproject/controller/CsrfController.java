@@ -16,7 +16,6 @@ public class CsrfController {
         return Map.of(
                 "headerName", token.getHeaderName(),
                 "parameterName", token.getParameterName(),
-                "token", token.getToken()
-        );
+                "token", token.getToken());
     }
 }

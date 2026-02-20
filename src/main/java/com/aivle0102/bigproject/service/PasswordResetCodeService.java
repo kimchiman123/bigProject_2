@@ -34,7 +34,8 @@ public class PasswordResetCodeService {
     public PasswordResetCodeService(
             UserInfoRepository userInfoRepository,
             @Qualifier("gmailMailSender") JavaMailSender gmailMailSender,
-            @Qualifier("naverMailSender") JavaMailSender naverMailSender) {
+            @Qualifier("naverMailSender") JavaMailSender naverMailSender
+    ) {
         this.userInfoRepository = userInfoRepository;
         this.gmailMailSender = gmailMailSender;
         this.naverMailSender = naverMailSender;
@@ -56,7 +57,7 @@ public class PasswordResetCodeService {
             message.setText("인증번호: " + code + "\n3분 이내에 입력해주세요.");
             mailSender.send(message);
         } catch (Exception ex) {
-            log.warn("Failed to send reset code email for userId={}. Code={}", userId, code, ex);
+            log.warn("비밀번호 재설정 코드 이메일 발송 실패: userId={}, code={}", userId, code, ex);
         }
     }
 
@@ -118,3 +119,4 @@ public class PasswordResetCodeService {
     private record CodeEntry(String code, Instant expiresAt) {
     }
 }
+

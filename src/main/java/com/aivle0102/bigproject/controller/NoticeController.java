@@ -23,12 +23,13 @@ public class NoticeController {
     private final NoticeService noticeService;
 
     @GetMapping
-    public ResponseEntity<List<NoticeResponse>> getNotices() {
-        return ResponseEntity.ok(noticeService.getNotices());
+    public ResponseEntity<List<NoticeResponse>> getNotices(Principal principal) {
+        String userId = principal == null ? null : principal.getName();
+        return ResponseEntity.ok(noticeService.getNotices(userId));
     }
 
     @GetMapping("/{noticeId}")
-    public ResponseEntity<NoticeResponse> getNotice(@PathVariable Long noticeId) {
+    public ResponseEntity<NoticeResponse> getNotice(@PathVariable("noticeId") Long noticeId) {
         return ResponseEntity.ok(noticeService.getNotice(noticeId));
     }
 
@@ -41,7 +42,7 @@ public class NoticeController {
 
     @PutMapping("/{noticeId}")
     public ResponseEntity<NoticeResponse> updateNotice(
-            @PathVariable Long noticeId,
+            @PathVariable("noticeId") Long noticeId,
             @Valid @RequestBody NoticeRequest request,
             Principal principal
     ) {
@@ -50,20 +51,20 @@ public class NoticeController {
     }
 
     @DeleteMapping("/{noticeId}")
-    public ResponseEntity<Void> deleteNotice(@PathVariable Long noticeId, Principal principal) {
+    public ResponseEntity<Void> deleteNotice(@PathVariable("noticeId") Long noticeId, Principal principal) {
         String userId = requireUser(principal);
         noticeService.deleteNotice(userId, noticeId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{noticeId}/comments")
-    public ResponseEntity<List<NoticeCommentResponse>> getComments(@PathVariable Long noticeId) {
+    public ResponseEntity<List<NoticeCommentResponse>> getComments(@PathVariable("noticeId") Long noticeId) {
         return ResponseEntity.ok(noticeService.getComments(noticeId));
     }
 
     @PostMapping("/{noticeId}/comments")
     public ResponseEntity<NoticeCommentResponse> addComment(
-            @PathVariable Long noticeId,
+            @PathVariable("noticeId") Long noticeId,
             @Valid @RequestBody NoticeCommentRequest request,
             Principal principal
     ) {
@@ -74,8 +75,8 @@ public class NoticeController {
 
     @PutMapping("/{noticeId}/comments/{commentId}")
     public ResponseEntity<NoticeCommentResponse> updateComment(
-            @PathVariable Long noticeId,
-            @PathVariable Long commentId,
+            @PathVariable("noticeId") Long noticeId,
+            @PathVariable("commentId") Long commentId,
             @Valid @RequestBody NoticeCommentRequest request,
             Principal principal
     ) {
@@ -85,8 +86,8 @@ public class NoticeController {
 
     @DeleteMapping("/{noticeId}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
-            @PathVariable Long noticeId,
-            @PathVariable Long commentId,
+            @PathVariable("noticeId") Long noticeId,
+            @PathVariable("commentId") Long commentId,
             Principal principal
     ) {
         String userId = requireUser(principal);

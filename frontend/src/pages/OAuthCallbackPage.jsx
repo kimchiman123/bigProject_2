@@ -18,18 +18,18 @@ const OAuthCallbackPage = () => {
             return;
         }
 
-        const storedFlow = sessionStorage.getItem('oauthFlow') || localStorage.getItem('oauthFlow');
+        const storedFlow = sessionStorage.getItem('oauthFlow');
         const flowValue = storedFlow || flow;
         if (storedFlow) {
             setFlow(storedFlow);
             sessionStorage.removeItem('oauthFlow');
-            localStorage.removeItem('oauthFlow');
         }
 
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
         const userId = params.get('userId');
         const errorParam = params.get('error');
+        const isNewUser = params.get('isNewUser') === 'true';
 
         if (errorParam) {
             setError(
@@ -73,12 +73,12 @@ const OAuthCallbackPage = () => {
         handledRef.current = true;
         login(token, userId || extractedName ? { userId, userName: extractedName } : {});
         if (extractedName) {
-            localStorage.setItem('userName', extractedName);
+            sessionStorage.setItem('userName', extractedName);
         }
         if (userId) {
-            localStorage.setItem('userId', userId);
+            sessionStorage.setItem('userId', userId);
         }
-        if (flowValue === 'signup') {
+        if (flowValue === 'signup' || isNewUser) {
             alert('회원가입이 완료되었습니다.');
         }
         window.location.replace('/mainboard');

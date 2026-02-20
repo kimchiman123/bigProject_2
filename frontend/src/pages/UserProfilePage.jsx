@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/common/GlassCard';
@@ -16,6 +16,8 @@ const UserProfilePage = () => {
     });
     const [loading, setLoading] = useState(false);
     const [isSocialAccount, setIsSocialAccount] = useState(false);
+    const isDemoAdmin = (sessionStorage.getItem('userId') || localStorage.getItem('userId')) === 'super';
+    const canEditPassword = !isSocialAccount && !isDemoAdmin;
 
     const hasSequentialDigits = (value, length = 3) => {
         if (!value) return false;
@@ -137,8 +139,8 @@ const UserProfilePage = () => {
         };
 
         const loadProfile = async () => {
-            const storedUserName = localStorage.getItem('userName') || '';
-            const storedUserId = localStorage.getItem('userId') || '';
+            const storedUserName = sessionStorage.getItem('userName') || localStorage.getItem('userName') || '';
+            const storedUserId = sessionStorage.getItem('userId') || localStorage.getItem('userId') || '';
             setFormData((prev) => ({
                 ...prev,
                 userName: storedUserName || prev.userName,
@@ -150,9 +152,11 @@ const UserProfilePage = () => {
                 const response = await axiosInstance.get('/user/me');
                 const data = response.data || {};
                 if (data.userName) {
+                    sessionStorage.setItem('userName', data.userName);
                     localStorage.setItem('userName', data.userName);
                 }
                 if (data.userId) {
+                    sessionStorage.setItem('userId', data.userId);
                     localStorage.setItem('userId', data.userId);
                 }
                 setIsSocialAccount(Boolean(data.socialAccount));
@@ -163,7 +167,7 @@ const UserProfilePage = () => {
                     birthDate: normalizeDate(data.birthDate),
                 }));
             } catch (error) {
-                console.error('Failed to load user profile:', error);
+                console.error('사용자 프로필을 불러오지 못했습니다:', error);
             }
         };
 
@@ -183,7 +187,7 @@ const UserProfilePage = () => {
             alert('변경할 값을 입력해주세요.');
             return;
         }
-        if (!isSocialAccount) {
+        if (canEditPassword) {
             if (formData.newPassword || formData.confirmNewPassword) {
                 if (!formData.currentPassword) {
                     alert('현재 비밀번호를 입력해주세요.');
@@ -205,7 +209,7 @@ const UserProfilePage = () => {
             const payload = {
                 birthDate: formData.birthDate || '',
             };
-            if (!isSocialAccount) {
+            if (canEditPassword) {
                 payload.currentPassword = formData.currentPassword || '';
                 if (formData.newPassword) {
                     payload.newPassword = formData.newPassword;
@@ -302,8 +306,14 @@ const UserProfilePage = () => {
                                 value={formData.currentPassword}
                                 onChange={handleChange}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isSocialAccount ? 'SNS 계정은 변경할 수 없습니다.' : '정보 수정을 위해 입력해주세요'}
-                                disabled={isSocialAccount}
+                                placeholder={
+                                    isDemoAdmin
+                                        ? '심사용 비밀번호는 변경 불가'
+                                        : isSocialAccount
+                                            ? 'SNS 계정은 변경할 수 없습니다.'
+                                            : '정보 수정을 위해 입력해주세요'
+                                }
+                                disabled={!canEditPassword}
                                 className="w-full p-4 rounded-xl bg-[color:var(--surface-muted)] border border-[color:var(--border)] text-[color:var(--text)] placeholder:text-[color:var(--text-soft)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60"
                             />
                         </div>
@@ -316,8 +326,14 @@ const UserProfilePage = () => {
                                 value={formData.newPassword}
                                 onChange={handleChange}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isSocialAccount ? 'SNS 계정은 변경할 수 없습니다.' : '변경할 경우에만 입력'}
-                                disabled={isSocialAccount}
+                                placeholder={
+                                    isDemoAdmin
+                                        ? '심사용 비밀번호는 변경 불가'
+                                        : isSocialAccount
+                                            ? 'SNS 계정은 변경할 수 없습니다.'
+                                            : '변경할 경우에만 입력'
+                                }
+                                disabled={!canEditPassword}
                                 className="w-full p-4 rounded-xl bg-[color:var(--surface-muted)] border border-[color:var(--border)] text-[color:var(--text)] placeholder:text-[color:var(--text-soft)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60"
                             />
                         </div>
@@ -330,8 +346,14 @@ const UserProfilePage = () => {
                                 value={formData.confirmNewPassword}
                                 onChange={handleChange}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isSocialAccount ? 'SNS 계정은 변경할 수 없습니다.' : '변경할 경우에만 입력'}
-                                disabled={isSocialAccount}
+                                placeholder={
+                                    isDemoAdmin
+                                        ? '심사용 비밀번호는 변경 불가'
+                                        : isSocialAccount
+                                            ? 'SNS 계정은 변경할 수 없습니다.'
+                                            : '변경할 경우에만 입력'
+                                }
+                                disabled={!canEditPassword}
                                 className={`w-full p-4 rounded-xl bg-[color:var(--surface-muted)] border ${formData.newPassword && formData.confirmNewPassword && formData.newPassword !== formData.confirmNewPassword ? 'border-red-500' : 'border-[color:var(--border)]'} text-[color:var(--text)] placeholder:text-[color:var(--text-soft)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60`}
                             />
                         </div>

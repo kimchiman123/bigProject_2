@@ -20,10 +20,7 @@ const LoginPage = () => {
 
     const handleSocialLogin = (provider) => {
         sessionStorage.setItem('oauthFlow', 'login');
-        localStorage.setItem('oauthFlow', 'login');
-        // 상대 경로를 사용하여 현재 도메인(http://20.197.14.81)을 자동으로 따르도록 설정
-        // Nginx의 location /oauth2/ 설정이 백엔드로 프록시 해줍니다.
-        window.location.assign(`/oauth2/authorization/${provider}`);
+        window.location.href = `/oauth2/authorization/${provider}`;
     };
 
     const handleLogin = async () => {
@@ -52,12 +49,12 @@ const LoginPage = () => {
             if (data.accessToken) {
                 login(data.accessToken, { userName: data.userName });
                 if (data.userName) {
-                    localStorage.setItem('userName', data.userName);
+                    sessionStorage.setItem('userName', data.userName);
                 }
                 if (data.userId) {
-                    localStorage.setItem('userId', data.userId);
+                    sessionStorage.setItem('userId', data.userId);
                 } else {
-                    localStorage.setItem('userId', userId);
+                    sessionStorage.setItem('userId', userId);
                 }
             }
 
@@ -78,7 +75,7 @@ const LoginPage = () => {
 
             navigate('/mainboard');
         } catch (err) {
-            console.error('Login error:', err);
+            console.error('로그인 오류:', err);
             const errorCode = err.response?.data?.errorCode;
             const backendMessage = err.response?.data?.message;
             if (errorCode === 'PASSWORD_RESET_REQUIRED') {
@@ -129,7 +126,7 @@ const LoginPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-full max-w-sm"
                     >
-                        <GlassCard className="p-8 text-center">
+                        <div className="p-8 text-center rounded-[2.5rem] bg-[color:var(--surface)] border border-[color:var(--border)] shadow-[0_30px_80px_var(--shadow-strong)]">
                             <h3 className="text-xl font-bold mb-3">로그인 제한</h3>
                             <p className="text-[color:var(--text-muted)] mb-6">
                                 로그인 실패가 5회 이상입니다. 비밀번호를 재설정해 주세요.
@@ -142,13 +139,13 @@ const LoginPage = () => {
                                     닫기
                                 </button>
                                 <button
-                                    onClick={() => navigate('/reset-password')}
+                                    onClick={() => navigate('/find-password')}
                                     className="flex-1 py-3 rounded-2xl bg-[color:var(--accent)] text-[color:var(--accent-contrast)] font-semibold hover:bg-[color:var(--accent-strong)] transition"
                                 >
                                     비밀번호 재설정
                                 </button>
                             </div>
-                        </GlassCard>
+                        </div>
                     </motion.div>
                 </div>
             )}
@@ -159,7 +156,7 @@ const LoginPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-full max-w-sm"
                     >
-                        <GlassCard className="p-8 text-center">
+                        <div className="p-8 text-center rounded-[2.5rem] bg-[color:var(--surface)] border border-[color:var(--border)] shadow-[0_30px_80px_var(--shadow-strong)]">
                             <h3 className="text-xl font-bold mb-3">로그인 경고</h3>
                             <p className="text-[color:var(--text-muted)] mb-6">
                                 로그인 오류 횟수 {warningCount ?? 0}회 / 5회
@@ -180,7 +177,7 @@ const LoginPage = () => {
                                     확인
                                 </button>
                             </div>
-                        </GlassCard>
+                        </div>
                     </motion.div>
                 </div>
             )}
@@ -285,3 +282,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

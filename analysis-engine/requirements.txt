@@ -1,0 +1,10 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+pandas==2.2.0
+plotly==5.18.0
+scikit-learn==1.4.0
+numpy
+python-multipart
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+

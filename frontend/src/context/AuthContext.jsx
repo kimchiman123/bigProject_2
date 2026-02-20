@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+﻿import React, { createContext, useState, useEffect, useContext } from 'react';
+import axiosInstance from '../axiosConfig';
 
 const AuthContext = createContext(null);
 
@@ -7,30 +8,32 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 초기 로딩 시 CSRF 토큰 발급 (상대 경로 사용으로 Nginx 프록시 활용)
-        fetch('/api/csrf', { credentials: 'include' })
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
+        // 초기 로딩 시 CSRF 토큰 발급
+        axiosInstance.get('/csrf')
+            .then((res) => {
+                const data = res.data;
                 if (data?.token) {
-                    localStorage.setItem('csrfToken', data.token);
+                    sessionStorage.setItem('csrfToken', data.token);
                 }
             })
             .catch(() => { });
 
-        const token = localStorage.getItem('accessToken');
+        const token = sessionStorage.getItem('accessToken');
         if (token) {
-            setUser({ token });
+            const userName = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+            const userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
+            setUser({ token, userName, userId });
         }
         setLoading(false);
     }, []);
 
     const login = (token, userData = {}) => {
-        localStorage.setItem('accessToken', token);
+        sessionStorage.setItem('accessToken', token);
         setUser({ token, ...userData });
     };
 
     const logout = () => {
-        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('accessToken');
         setUser(null);
     };
 

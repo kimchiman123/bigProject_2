@@ -27,16 +27,24 @@ public class NoticeService {
     private final UserInfoRepository userInfoRepository;
 
     @Transactional(readOnly = true)
-    public List<NoticeResponse> getNotices() {
-        return noticeRepository.findAllByOrderByCreatedAtDesc()
+    public List<NoticeResponse> getNotices(String userId) {
+        Long companyId = userId == null ? null : resolveCompanyId(userId);
+        List<Notice> notices = companyId == null
+                ? noticeRepository.findAllByOrderByCreatedAtDesc()
+                : noticeRepository.findByCompanyIdOrCompanyIdIsNullOrderByCreatedAtDesc(companyId);
+        return notices
                 .stream()
-                .map(NoticeResponse::from)
+                .map(notice -> {
+                    notice.setAuthorName(resolveUserName(notice.getAuthorId()));
+                    return NoticeResponse.from(notice);
+                })
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public NoticeResponse getNotice(Long noticeId) {
         Notice notice = findNotice(noticeId);
+        notice.setAuthorName(resolveUserName(notice.getAuthorId()));
         return NoticeResponse.from(notice);
     }
 
@@ -48,6 +56,7 @@ public class NoticeService {
                 .content(request.getContent())
                 .authorId(userInfo.getUserId())
                 .authorName(userInfo.getUserName())
+                .companyId(userInfo.getCompanyId())
                 .build();
         return NoticeResponse.from(noticeRepository.save(notice));
     }
@@ -72,7 +81,10 @@ public class NoticeService {
         findNotice(noticeId);
         return noticeCommentRepository.findAllByNoticeIdOrderByCreatedAtAsc(noticeId)
                 .stream()
-                .map(NoticeCommentResponse::from)
+                .map(comment -> {
+                    comment.setAuthorName(resolveUserName(comment.getAuthorId()));
+                    return NoticeCommentResponse.from(comment);
+                })
                 .toList();
     }
 
@@ -127,5 +139,17 @@ public class NoticeService {
         if (!authorId.equals(userId)) {
             throw new CustomException("권한이 없습니다.", HttpStatus.FORBIDDEN, "FORBIDDEN");
         }
+    }
+
+    private String resolveUserName(String userId) {
+        return userInfoRepository.findByUserId(userId)
+                .map(UserInfo::getUserName)
+                .orElse(userId);
+    }
+
+    private Long resolveCompanyId(String userId) {
+        return userInfoRepository.findByUserId(userId)
+                .map(UserInfo::getCompanyId)
+                .orElse(null);
     }
 }

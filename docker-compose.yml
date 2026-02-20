@@ -42,10 +42,13 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${DDL_AUTO:-update}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # [Optimization] Limit connection pool to avoid exhaustion
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:-3}
       # External APIs
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       SERPAPI_API_KEY: ${SERPAPI_API_KEY}
       HACCP_SERVICE_KEY: ${HACCP_SERVICE_KEY}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       # Mail
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
@@ -56,7 +59,13 @@ services:
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      OAUTH2_REDIRECT_URI: http://20.197.14.81/oauth/callback
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:80/oauth/callback}
+      NAVER_REDIRECT_URI: ${NAVER_REDIRECT_URI:-http://localhost:8080/login/oauth2/code/naver}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI:-http://localhost:8080/login/oauth2/code/kakao}
+      ANALYSIS_ENGINE_URL: http://analysis-engine:8000
+      CHATBOT_URL: http://ai-chatbot:7860
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:
@@ -74,7 +83,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://20.197.14.81/api
+        - VITE_API_URL=/api
+        - VITE_CHATBOT_URL=http://localhost:7860
     container_name: bigproject-frontend
     restart: unless-stopped
     depends_on:
@@ -84,12 +94,64 @@ services:
       - "${FRONTEND_PORT:-80}:80"
     networks:
       - bigproject-network
+    environment:
+      - CHATBOT_URL=http://ai-chatbot:7860
+      - BACKEND_URL=http://backend:8080
+      - ANALYSIS_ENGINE_URL=http://analysis-engine:8000
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # Python Analysis Engine
+  analysis-engine:
+    build:
+      context: ./analysis-engine
+      dockerfile: Dockerfile
+    container_name: bigproject-analysis
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+    volumes:
+      - ./analysis-engine:/app
+    environment:
+      - PORT=8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - POSTGRES_DB=${DB_NAME:-bigproject}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_SSLMODE=${DB_SSLMODE:-disable}
+      # [Optimization] Limit connection pool
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-2}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-1}
+    ports:
+      - "8000:8000"
+    networks:
+      - bigproject-network
+
+  # AI Chatbot (Gradio)
+  ai-chatbot:
+    build:
+      context: ./ai-chatbot
+      dockerfile: Dockerfile
+    container_name: bigproject-chatbot
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - API_BASE_URL=http://bigproject-backend:8080
+
+    networks:
+      - bigproject-network
 
 networks:
   bigproject-network:
