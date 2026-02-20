@@ -1,4 +1,4 @@
-# K-food 수출 및 현지화 지원 플랫폼 (BigProject)
+﻿# K-food 수출 및 현지화 지원 플랫폼 (BigProject)
 
 [![Frontend CI](https://github.com/FairyGina/bigProject/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/FairyGina/bigProject/actions/workflows/frontend-ci.yml)
 [![Backend CI](https://github.com/FairyGina/bigProject/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/FairyGina/bigProject/actions/workflows/backend-ci.yml)
@@ -195,3 +195,16 @@ docker-compose up -d --build
 | **Backend API** | http://localhost:8080 |
 | **AI Chatbot** | http://localhost:7860 |
 | **Analysis Engine** | http://localhost:8000 |
+
+---
+
+## 팀 소개
+
+| 이름 | 역할 | 주요 담당 |
+|------|------|-----------|
+| **김지나 (팀장)** | AI / Frontend / Backend / Data | 프로젝트 진행 총괄 및 팀·일정 관리, 프로젝트 회의록·주간 보고서 관리, 전체 시스템 아키텍처 설계, 시스템 통합 및 아키텍처 총괄 관리, AI 레시피 챗봇 에이전트 파이프라인 구축·개발, 국가별 부적합 정보 데이터셋 전처리·생성, 국가별 부적합 정보 에이전트 설계·개발 |
+| **김경훈** | AI / Cloud / ML / Data | 데이터 분석 및 웹 시각화 설계·개발, 수요 & 트렌드 예측 데이터 파이프라인 구축·개발, 국가별 TOP-N 결과 리포트 생성 파이프라인 구축, 클라우드 CI/CD 배포 파z이프라인 구축, Azure Container Apps 클라우드 인프라 배포 |
+| **안지현** | AI / Frontend / Backend / Data | 프로젝트 회의록 작성 및 관리, 전체 시스템 아키텍처 설계, AI 레시피 챗봇 에이전트 개발 및 웹 연결, 알레르기 정보 데이터셋 전처리·생성, 알레르기 정보 에이전트 설계·개발 |
+| **이승윤** | AI / Data / ML | 수요 & 트렌드 예측 모델 설계·개발, 성능 실험·비교 및 평가 지표 산출, 국가별 TOP-N 결과 리포트 생성 파이프라인 구축, 도움말 챗봇 에이전트 설계·개발 및 웹 연결, AI 레시피 챗봇 프롬프트 엔지니어링 |
+| **박권호** | AI / Frontend / Backend | 프론트엔드 PM, 시스템 통합 및 아키텍처 검토, 레시피 재료 추출 기능 개발, 인플루언서 추천 및 생성 에이전트 설계·개발, 리포트 에이전트 설계·개발, 공지사항 게시판 설계·개발 |
+| **차수진** | AI / Frontend / Backend / DB | 레시피 평가 AI 페르소나 모델 설계 및 로직 개발, 최종 레시피 보고서 AI, 비교/분석 에이전트 설계·개발, 전체 시스템 DB 스키마 설계 및 데이터 모델링, 기업별 멀티테넌시 회원 관리 및 SNS 연동로그인, 웹 보안 시스템 설계·구축, 비대면 회의 실시간 채팅 개발 |
