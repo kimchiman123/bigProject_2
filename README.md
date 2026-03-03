@@ -50,9 +50,8 @@ K-푸드는 2025년 수출액 **136.2억 달러**를 기록하며 역대 최대 
 |--------|----------|------|
 | **Frontend** | React 18, Vite, TailwindCSS | 사용자 인터페이스 |
 | **Backend (Core)** | Spring Boot 3.x, Java 17 | 인증·DB·라우팅 통합 처리 |
-| **AI Chatbot** | Python, LangGraph, GPT-4o | 레시피 생성 AI (독립 컨테이너) |
+| **AI Chatbot** | Python, LangGraph, GPT-4o | 레시피 생성 AI, 서비스 도우미 챗봇 (독립 컨테이너) |
 | **Analysis Engine** | Python, FastAPI, Pandas | 데이터 분석·시각화 (독립 컨테이너) |
-| **Helper Chatbot** | Python | 서비스 도우미 챗봇 (독립 컨테이너) |
 | **Infrastructure** | Azure Container Apps, PostgreSQL | 클라우드 배포 및 데이터 저장 |
 
 > 💡 **아키텍처 선택 이유**  
