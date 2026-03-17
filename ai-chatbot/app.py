@@ -1,4 +1,4 @@
-﻿# 파일 설명: Gradio UI에서 LangGraph(graph.py)를 호출해 단계형 레시피 챗봇을 실행한다.
+# 파일 설명: Gradio UI에서 LangGraph(graph.py)를 호출해 단계형 레시피 챗봇을 실행한다.
 #             사용자 입력/옵션을 상태에 반영하고, 각 단계 메시지를 Chatbot에 렌더링한다.
 from __future__ import annotations
 
@@ -1051,6 +1051,10 @@ class IframeMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(IframeMiddleware)
+
+@app.get("/")
+async def root():
+    return {"status": "ok"}
 
 # Gradio 앱을 FastAPI에 마운트
 # 레시피 챗봇 마운트

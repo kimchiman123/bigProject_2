@@ -81,6 +81,148 @@ def clean_json_field(val):
     except: return json.dumps([])
 
 # ==========================================
+# [작업] 수출 트렌드 로드
+# ==========================================
+def load_export_trends():
+    csv_path = "cleaned_merged_export_trends.csv"
+    if not os.path.exists(csv_path):
+        print(f"⚠️ Skipping export_trends: {csv_path} not found")
+        return
+
+    print(f"📂 Processing {csv_path}...")
+    conn = get_db_connection()
+    if not conn:
+        print("❌ DB connection failed for export_trends")
+        return
+
+    try:
+        cur = conn.cursor()
+
+        # 테이블 생성 (init-db에서 이미 생성되지만, 안전을 위해 재확인)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS export_trends (
+                id SERIAL PRIMARY KEY,
+                country_name VARCHAR(100),
+                country_code VARCHAR(10),
+                item_name VARCHAR(100),
+                period VARCHAR(20),
+                period_str VARCHAR(20),
+                export_value NUMERIC,
+                export_weight NUMERIC,
+                unit_price NUMERIC,
+                exchange_rate NUMERIC,
+                gdp_level NUMERIC,
+                trend_data JSONB
+            );
+            CREATE INDEX IF NOT EXISTS idx_export_trends_search ON export_trends (country_name, item_name);
+            CREATE INDEX IF NOT EXISTS idx_export_trends_period ON export_trends (period_str);
+        """)
+        conn.commit()
+
+        # 기존 데이터 확인
+        FORCE_MIGRATE = os.environ.get("FORCE_MIGRATE", "false").lower() == "true"
+        if FORCE_MIGRATE:
+            print("Force Migrating: Truncating export_trends...")
+            cur.execute("TRUNCATE TABLE export_trends")
+            conn.commit()
+        else:
+            cur.execute("SELECT COUNT(*) FROM export_trends")
+            count = cur.fetchone()[0]
+            if count > 0:
+                print(f"✅ export_trends already has {count} rows. Skipping.")
+                return
+
+        print("🚀 Loading export_trends...")
+        df = pd.read_csv(csv_path)
+        print(f"   CSV loaded: {len(df)} rows, {len(df.columns)} columns")
+
+        # 표준 컬럼 정의
+        std_cols = ['period', 'item_name', 'country_code', 'country_name', 'export_value',
+                    'export_weight', 'unit_price', 'exchange_rate', 'gdp_level']
+
+        # period_str 생성 (period 정제)
+        def clean_period(val):
+            if pd.isna(val) or val == '':
+                return ''
+            s = str(val).strip()
+            parts = s.split('.')
+            year = parts[0]
+            if len(parts) > 1:
+                month_part = parts[1]
+                if len(month_part) == 2:
+                    month = month_part
+                elif len(month_part) == 1:
+                    month = str(int(month_part) + 9).zfill(2)  # 1->10, 2->11, 3->12
+                else:
+                    month = str(month_part)[:2].zfill(2)
+            else:
+                month = '01'
+            return f"{year}-{month}"
+
+        df['period_str'] = df['period'].apply(clean_period)
+
+        # 트렌드 데이터용 컬럼 식별
+        technical_cols = ['hs_code', 'date', 'month', 'year', 'month_sin', 'month_cos',
+                          'export_value_ma3', 'export_value_ema3', 'exchange_rate_ma3', 'exchange_rate_ema3',
+                          'cpi_monthly_idx_ma3', 'cpi_monthly_idx_ema3', 'gdp_growth_ma3', 'gdp_growth_ema3',
+                          'gdp_level_ma3', 'gdp_level_ema3', 'year_month']
+
+        all_cols = df.columns.tolist()
+        pack_cols = [c for c in all_cols if c not in std_cols and c not in technical_cols and c != 'period_str']
+
+        # 데이터 준비
+        data_to_insert = []
+        for _, row in df.iterrows():
+            trend_dict = {}
+            for k in pack_cols:
+                if k in row and pd.notna(row[k]):
+                    val = row[k]
+                    # NaN/Inf를 JSON 직렬화에서 안전하게 처리
+                    if isinstance(val, float) and (np.isnan(val) or np.isinf(val)):
+                        continue
+                    trend_dict[k] = val
+
+            data_to_insert.append((
+                row.get('country_name'),
+                row.get('country_code'),
+                row.get('item_name'),
+                str(row.get('period')),
+                row.get('period_str'),
+                to_float(row.get('export_value')),
+                to_float(row.get('export_weight')),
+                to_float(row.get('unit_price')),
+                to_float(row.get('exchange_rate')),
+                to_float(row.get('gdp_level')),
+                json.dumps(trend_dict)
+            ))
+
+        # Bulk Insert
+        insert_query = """
+        INSERT INTO export_trends
+        (country_name, country_code, item_name, period, period_str, export_value, export_weight, unit_price, exchange_rate, gdp_level, trend_data)
+        VALUES %s
+        """
+
+        # 1000개씩 나눠서 삽입
+        chunk_size = 1000
+        total_inserted = 0
+        for i in range(0, len(data_to_insert), chunk_size):
+            chunk = data_to_insert[i:i + chunk_size]
+            execute_values(cur, insert_query, chunk, page_size=1000)
+            conn.commit()
+            total_inserted += len(chunk)
+            print(f"   Chunk {i // chunk_size + 1} success. Total: {total_inserted}/{len(data_to_insert)}")
+
+        print(f"✅ export_trends loaded. Total: {total_inserted}")
+    except Exception as e:
+        print(f"❌ export_trends load failed: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        if conn: conn.close()
+
+
+# ==========================================
 # [작업] 아마존 리뷰 로드
 # ==========================================
 def load_amazon_reviews():
@@ -182,4 +324,10 @@ def load_amazon_reviews():
         if conn: conn.close()
 
 if __name__ == "__main__":
-    load_amazon_reviews()
+    try:
+        load_export_trends()
+        load_amazon_reviews()
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        import traceback
+        traceback.print_exc()
