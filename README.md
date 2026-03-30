@@ -1,4 +1,4 @@
-﻿# K-food 수출 및 현지화 지원 플랫폼 (BigProject)
+# K-food 수출 및 현지화 지원 플랫폼 (BigProject)
 
 [![Frontend CI](https://github.com/FairyGina/bigProject/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/FairyGina/bigProject/actions/workflows/frontend-ci.yml)
 [![Backend CI](https://github.com/FairyGina/bigProject/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/FairyGina/bigProject/actions/workflows/backend-ci.yml)
@@ -194,6 +194,60 @@ docker-compose up -d --build
 | **Backend API** | http://localhost:8080 |
 | **AI Chatbot** | http://localhost:7860 |
 | **Analysis Engine** | http://localhost:8000 |
+
+---
+
+## 🔧 트러블 슈팅 & 아키텍처 의사결정
+
+프로젝트를 진행하며 겪었던 기술적 고민과 문제 해결 과정을 정리했습니다.
+
+---
+
+### 1. Azure VM → Azure Container Apps 전환
+
+![아키텍처 선정 이유 1](.assets/page_1.png)
+
+초기에는 Azure VM에서 Docker Compose로 서비스를 운영했으나, Blue-Green 배포 시 비용 2배 증가 및 VM 프로비저닝 지연 문제가 발생했습니다. 이를 해결하기 위해 **Azure Container Apps(ACA)** 로 전환하여 Serverless 기반 자동 스케일링, Rolling Update를 통한 무중단 배포, Scale to 0을 통한 비용 절감을 달성했습니다.
+
+---
+
+### 2. 모놀리식 → 준(Semi) MSA 구조 전환
+
+![아키텍처 선정 이유 2](.assets/page_2.png)
+
+Python 기반 AI 서비스(챗봇·분석 엔진)가 추가되면서 단일 서버 구조의 한계가 드러났습니다. 각 서비스를 독립 컨테이너로 분리하여 **개별 스케일링 정책**을 적용하고, AI 모듈의 Idle 시간을 최적화하여 불필요한 비용 발생을 차단했습니다.
+
+---
+
+### 3. Cloud 환경 인증 문제 (SSL Termination & 프로토콜 유실)
+
+![트러블 슈팅 - Cloud 인증](.assets/page_3.png)
+
+ACA 배포 후 OAuth2 Redirect URL 불일치 및 인증 실패가 발생했습니다. ACA Ingress의 SSL Termination으로 인해 백엔드에서 HTTPS를 인식하지 못하는 것이 원인이었으며, Nginx에서 **X-Forwarded-Proto 헤더를 명시적으로 주입**하여 Spring Security가 프로토콜을 올바르게 판단하도록 해결했습니다.
+
+---
+
+### 4. JWT와 CSRF 보안 설정 (Cross-Origin 환경)
+
+![트러블 슈팅 - JWT & CSRF](.assets/page_4.png)
+
+로컬에서는 정상 동작하나 ACA 배포 후 POST/PUT API 호출 시 403 에러가 발생했습니다. Cross-Origin 환경에서 CSRF 쿠키가 유실되는 문제를 확인하고, 필터에서 **csrfToken을 명시적으로 호출**하여 응답 헤더에 포함시키고 쿠키 속성을 `SameSite=None`, `Secure=True`로 설정하여 해결했습니다.
+
+---
+
+### 5. 데이터 병목 및 API 응답 경량화
+
+![트러블 슈팅 - 데이터 경량화](.assets/page_5.png)
+
+레시피 목록 조회 시 응답이 6~7초로 지연되는 문제가 발생했습니다. 목록 조회용 **경량 DTO를 별도 구성**하여 필수 정보만 반환하고, 100KB 이상 이미지는 자동으로 리사이징하여 썸네일로 변환함으로써 **응답 속도를 50% 단축**(2~3초)했습니다.
+
+---
+
+### 6. CI/CD 파이프라인 최적화
+
+![CI/CD 최적화](.assets/page_6.png)
+
+`paths` 필터 기반 **선택적 빌드**로 변경된 서비스만 CI를 실행하여 불필요한 빌드를 방지하고, **다중 레이어 캐싱**(pip, npm, Docker Layer)으로 빌드 시간을 단축했습니다. 또한 배포 전 Shift-Left 검증(flake8, npm lint, gradlew build)과 ACA 리비전 자동 교체를 통한 **무중단 배포**를 구현했습니다.
 
 ---
 
