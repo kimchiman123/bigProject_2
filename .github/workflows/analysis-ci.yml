@@ -38,5 +38,6 @@ jobs:
       working-directory: ./analysis-engine
       run: |
         pip install pytest
-        # 켈렉션 확인 (현재 테스트 코드가 없으므로 실패할 수 있음)
-        # pytest 
+        # test_main.py 단위 테스트 실행
+        pytest
+
